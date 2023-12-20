@@ -39,9 +39,9 @@ def login(driver):
     driver.get("https://www.linkedin.com/login")
     time.sleep(2)
 
-    with open('backend/assets/user_credentials.txt', 'r', encoding="utf-8") as file:
-        user_credentials = file.readlines()
-        user_credentials = [line.rstrip() for line in user_credentials]
+    # with open('backend/assets/user_credentials.txt', 'r', encoding="utf-8") as file:
+    #     user_credentials = file.readlines()
+    #     user_credentials = [line.rstrip() for line in user_credentials]
     
     load_dotenv()
     user_name = os.getenv('USER_NAME')
@@ -220,11 +220,8 @@ def main():
     # job_name = "Software Engineer"
     # job_location = "Ottawa, ON"
 
-    path = "../chrome-mac-x64/chromedriver"
-    chrome_options = Options()
-    chrome_options.binary_location = path
 
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = webdriver.Chrome()
     driver.maximize_window()
     driver.implicitly_wait(10)
 

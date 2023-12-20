@@ -24,4 +24,9 @@ def scraper():
     job_name = request.form.get("job_name")
     job_location = request.form.get("job_location")
 
-    subprocess.run(['python3', 'backend/src/scraper/scraper.py', job_name, job_location])
+
+    try:
+        subprocess.run(['python3', 'backend/src/scraper/scraper.py', job_name, job_location])
+        return jsonify({'message': 'Script executed successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
