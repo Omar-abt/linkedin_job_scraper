@@ -1,14 +1,13 @@
 from flask import Flask, request, jsonify
 import subprocess
-import os
-
 
 app = Flask(__name__)
 
 
 @app.route("/")
 def hello_world():
-    return "<p>Hello, World!</p>"
+    return ("<p>LinkedIn Job Scraper API</p>"
+            "<p>To Access the scraper use the 'scraper' endpoint</p>")
 
 @app.route("/test")
 def test():
@@ -19,10 +18,12 @@ def scraper():
     # data = request.json  # For JSON payload
     # data = request.form  # For form data
 
-    print(os.getcwd())
-
-    job_name = request.form.get("job_name")
-    job_location = request.form.get("job_location")
+    data = request.json
+    if data:
+        job_name = data.get("job_name")
+        job_location = data.get("job_location")
+    else:
+        return jsonify({'error': 'Invalid JSON data'}), 400
 
 
     try:
