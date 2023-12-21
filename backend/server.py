@@ -27,7 +27,7 @@ def scraper():
 
 
     try:
-        subprocess.run(['python3', 'backend/src/scraper/scraper.py', job_name, job_location])
+        subprocess.run(['python3', 'src/scraper/scraper.py', job_name, job_location])
         return jsonify({'message': 'Script executed successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
