@@ -6,6 +6,7 @@ from selenium.webdriver.chrome.options import Options
 import signal
 from dotenv import load_dotenv
 import os
+import concurrent.futures
 
 import dataframe
 
@@ -20,17 +21,13 @@ job_desc = []
 experience_level = []
 
 
-def timeout_handler(signum, frame):
-    raise Exception()
-
-def find_element_with_timeout(element, by, locator, timeout=1):
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(timeout)
-
+def find_element(element, by, locator):
     try:
         result = element.find_element(by, locator).text
         return result
     except:
+        pass
+        # print("pass test")
         return ''
 
 
@@ -38,6 +35,9 @@ def find_element_with_timeout(element, by, locator, timeout=1):
 def login(driver):
     driver.get("https://www.linkedin.com/login")
     time.sleep(2)
+
+    print("Selenium running on Docker")
+    # driver.quit()
 
     # with open('backend/assets/user_credentials.txt', 'r', encoding="utf-8") as file:
     #     user_credentials = file.readlines()
@@ -59,6 +59,8 @@ def login(driver):
 # Function to get to jobs page and search for job specified
 def go_to_jobs(driver, job_name, job_location):
 
+    print("On jobs page")
+
     driver.find_element(By.XPATH, '//*[@id="global-nav"]/div/nav/ul/li[3]/a').click()
     time.sleep(2) 
 
@@ -73,6 +75,7 @@ def go_to_jobs(driver, job_name, job_location):
 
 # Function to collect job links
 def collect_job_links(driver):
+    print("Collecting job links")
     links = []
     try: 
         for page in range(2,3):
@@ -133,7 +136,7 @@ def scrape_job_details(driver, links):
         # except:
         #     company_names.append('')
         #     pass
-        company_names.append(find_element_with_timeout(job_details, By.TAG_NAME, 'a'))
+        company_names.append(find_element(job_details, By.TAG_NAME, 'a'))
 
         # try:
         #     post_dates.append(job_details.find_element(By.XPATH, "//span[3]/span").text)
@@ -141,14 +144,14 @@ def scrape_job_details(driver, links):
         # except:
         #     post_dates.append('')
         #     pass
-        post_dates.append(find_element_with_timeout(job_details, By.XPATH, '//span[3]/span'))
+        post_dates.append(find_element(job_details, By.XPATH, '//span[3]/span'))
 
         # try:
         #     number_applicants.append(job_details.find_element(By.XPATH, "//span[5]").text)
         # except:
         #     number_applicants.append('')
         #     pass
-        number_applicants.append(find_element_with_timeout(job_details, By.XPATH, '//span[5]'))
+        number_applicants.append(find_element(job_details, By.XPATH, '//span[5]'))
 
 
         # try:
@@ -161,9 +164,9 @@ def scrape_job_details(driver, links):
         # except:
         #     role_locations.append('')
         #     pass
-        span_text = find_element_with_timeout(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span")
+        span_text = find_element(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span")
         if span_text not in ['On-site', 'Hybrid', 'Remote']:
-            span_text = find_element_with_timeout(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span[2]")
+            span_text = find_element(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span[2]")
         role_locations.append(span_text)
         
 
@@ -177,9 +180,9 @@ def scrape_job_details(driver, links):
         # except:
         #     job_type.append('')
         #     pass
-        span_text = find_element_with_timeout(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span[2]")
+        span_text = find_element(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span[2]")
         if span_text not in ['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship', 'Volunteer', 'Other']:
-            span_text = find_element_with_timeout(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span[3]")
+            span_text = find_element(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span[3]")
         job_type.append(span_text)
         
 
@@ -194,9 +197,9 @@ def scrape_job_details(driver, links):
         # except:
         #     experience_level.append('')
         #     pass
-        span_text = find_element_with_timeout(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span[3]")
+        span_text = find_element(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span[3]")
         if span_text not in ['Internship', 'Entry level', 'Associate', 'Mid-Senior level', 'Director', 'Executive']:
-            span_text = find_element_with_timeout(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span[4]")
+            span_text = find_element(content, By.XPATH, "//div[@class='mt3 mb2']/ul/li[1]/span/span[4]")
         experience_level.append(span_text)
 
         print(f'Scraping Job Posting {j} DONE.')
@@ -221,9 +224,13 @@ def main():
     # job_location = "Ottawa, ON"
 
 
-    driver = webdriver.Chrome()
+    options = webdriver.ChromeOptions()
+    driver = webdriver.Remote(command_executor="http://localhost:4444", options=options)
+
     driver.maximize_window()
-    driver.implicitly_wait(10)
+
+    # 2 second timeout
+    driver.implicitly_wait(1)
 
     login(driver)
     time.sleep(2)
@@ -234,8 +241,24 @@ def main():
     # Search for jobs and collect links
     job_links = collect_job_links(driver)
 
+
+    # with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+    #     results = list(executor.map(lambda job_links: scrape_job_details(driver, job_links), job_links))
+
+
+
+
     # Scrape job details using collected links
     scrape_job_details(driver, job_links)
+
+    # Delete previous output files
+    if not os.path.exists("./output"):
+        os.mkdir("./output")
+
+    if os.path.exists("./output/jobs.csv"):
+        os.remove("./output/jobs.csv")
+    if os.path.exists("./output/jobs_cleaned.csv"):
+        os.remove("./output/jobs_cleaned.csv")
 
     # Create pandas dataframe and output to CSV
     df = dataframe.create_data_frame(job_titles, company_names, role_locations, job_type, experience_level, post_dates, number_applicants)
@@ -244,6 +267,12 @@ def main():
     # Clean and output cleaned dataframe
     df = dataframe.clean_data_frame(df)
     df.to_csv('backend/output/jobs_cleaned.csv', index=False)
+
+    # # Send the CSV file to the Flask endpoint
+    # files = {'file': open(csv_file_path, 'rb')}  # 'file' should match the key expected by your Flask endpoint
+    # response = requests.post(flask_endpoint_url, files=files)
+
+    driver.quit()
 
 if __name__ == "__main__":
     main()

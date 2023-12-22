@@ -1,17 +1,14 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import subprocess
+import os
 
 app = Flask(__name__)
 
 
 @app.route("/")
-def hello_world():
-    return ("<p>LinkedIn Job Scraper API</p>"
-            "<p>To Access the scraper use the 'scraper' endpoint</p>")
-
-@app.route("/test")
-def test():
-    return "<p>Test</p>"
+def main():
+    return ("<h2>LinkedIn Job Scraper API</h2>"
+            "<p>To Access the scraper use the '/scraper' endpoint</p>")
 
 @app.route("/scraper", methods=['POST'])
 def scraper():
@@ -28,7 +25,13 @@ def scraper():
 
     try:
         subprocess.run(['python3', 'src/scraper/scraper.py', job_name, job_location])
-        return jsonify({'message': 'Script executed successfully'}), 200
+        output_file = "./output/jobs_cleaned.csv"
+
+        if os.path.exists(output_file):
+            return send_file(output_file, as_attachment=True)
+        else:
+            raise FileNotFoundError
+        # return jsonify({'message': 'Script executed successfully'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
